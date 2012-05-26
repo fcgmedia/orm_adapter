@@ -19,13 +19,13 @@ module Dynamoid
 
       # get a list of column names for a given class
       def column_names
-        klass.fields.keys
+        klass.new.attributes.keys
       end
 
       # @see OrmAdapter::Base#get!
       def get!(id)
         rec = klass.find_by_id(wrap_key(id))
-        raise "record not fund" if rec.nil?
+        raise "Record not found" if rec.nil?
         rec
       end
 
@@ -37,13 +37,28 @@ module Dynamoid
       # @see OrmAdapter::Base#find_first
       def find_first(options)
         conditions, order = extract_conditions_and_order!(options)
-        klass.limit(1).where(conditions_to_fields(conditions)).order_by(order).first
+        record = klass.where(conditions_to_fields(conditions)).limit(1)
+        record.empty? ? nil : record.first
       end
 
       # @see OrmAdapter::Base#find_all
       def find_all(options)
         conditions, order = extract_conditions_and_order!(options)
-        klass.where(conditions_to_fields(conditions)).order_by(order)
+        unless order.empty?
+          puts "\n" + "="*80
+          order.each do |o|
+            puts o.inspect
+          end
+          puts "="*80 + "\n"
+        end
+        order_field, asc_or_desc = order
+        klass.where(conditions_to_fields(conditions)).sort do |a,b|
+          if asc_or_desc == :asc
+            a.send(order) <=> b.send(order)
+          else
+            b.send(order) <=> a.send(order)
+          end
+        end #.order_by(order)
       end
 
       # @see OrmAdapter::Base#create!
@@ -56,8 +71,8 @@ module Dynamoid
       # converts and documents to ids
       def conditions_to_fields(conditions)
         conditions.inject({}) do |fields, (key, value)|
-          if value.is_a?(Dynamoid::Document) && klass.fields.keys.include?("#{key}_id")
-            fields.merge("#{key}_id" => value.id)
+          if value.is_a?(Dynamoid::Document) && klass.attributes.keys.include?("#{key}_ids".to_sym)
+            fields.merge("#{key}_ids".to_sym => Set[value.id])
           else
             fields.merge(key => value)
           end
