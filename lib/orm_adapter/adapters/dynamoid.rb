@@ -45,13 +45,17 @@ module Dynamoid
       def find_all(options)
         conditions, order = extract_conditions_and_order!(options)
         order_field, asc_or_desc = order
-        klass.where(conditions_to_fields(conditions)).sort do |a,b|
-          if asc_or_desc == :asc
-            a.send(order) <=> b.send(order)
-          else
-            b.send(order) <=> a.send(order)
+        if order.empty? || order.nil?
+          klass.where(conditions_to_fields(conditions)).map{|r| r }
+        else
+          klass.where(conditions_to_fields(conditions)).sort do |a,b|
+            if asc_or_desc == :asc
+              a.send(order) <=> b.send(order)
+            else
+              b.send(order) <=> a.send(order)
+            end
           end
-        end #.order_by(order)
+        end
       end
 
       # @see OrmAdapter::Base#create!
