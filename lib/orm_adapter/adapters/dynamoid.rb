@@ -44,13 +44,6 @@ module Dynamoid
       # @see OrmAdapter::Base#find_all
       def find_all(options)
         conditions, order = extract_conditions_and_order!(options)
-        unless order.empty?
-          puts "\n" + "="*80
-          order.each do |o|
-            puts o.inspect
-          end
-          puts "="*80 + "\n"
-        end
         order_field, asc_or_desc = order
         klass.where(conditions_to_fields(conditions)).sort do |a,b|
           if asc_or_desc == :asc
