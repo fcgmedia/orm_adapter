@@ -44,15 +44,23 @@ module Dynamoid
       # @see OrmAdapter::Base#find_all
       def find_all(options)
         conditions, order = extract_conditions_and_order!(options)
-        order_field, asc_or_desc = order
         if order.empty? || order.nil?
           klass.where(conditions_to_fields(conditions)).map{|r| r }
         else
           klass.where(conditions_to_fields(conditions)).sort do |a,b|
-            if asc_or_desc == :asc
-              a.send(order) <=> b.send(order)
+            case order.size
+            when 1
+              order.flatten!
+              sort_field, asc_or_desc = order
+              if asc_or_desc == :asc
+                a.send(sort_field) <=> b.send(sort_field)
+              else
+                b.send(sort_field) <=> a.send(sort_field)
+              end
+            when 2
+
             else
-              b.send(order) <=> a.send(order)
+              raise NotImplementedError
             end
           end
         end
@@ -74,6 +82,10 @@ module Dynamoid
             fields.merge(key => value)
           end
         end
+      end
+
+      def order_by(orders, &block)
+
       end
     end
   end
