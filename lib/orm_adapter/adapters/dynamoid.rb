@@ -36,8 +36,7 @@ module Dynamoid
 
       # @see OrmAdapter::Base#find_first
       def find_first(options)
-        conditions, order = extract_conditions_and_order!(options)
-        record = klass.where(conditions_to_fields(conditions)).limit(1)
+        record = find_all(options)
         record.empty? ? nil : record.first
       end
 
@@ -58,7 +57,7 @@ module Dynamoid
                 b.send(sort_field) <=> a.send(sort_field)
               end
             when 2
-
+              raise NotImplementedError
             else
               raise NotImplementedError
             end
@@ -72,21 +71,16 @@ module Dynamoid
       end
 
     protected
-
-      # converts and documents to ids
-      def conditions_to_fields(conditions)
-        conditions.inject({}) do |fields, (key, value)|
-          if value.is_a?(Dynamoid::Document) && klass.attributes.keys.include?("#{key}_ids".to_sym)
-            fields.merge("#{key}_ids".to_sym => Set[value.id])
-          else
-            fields.merge(key => value)
-          end
+    # converts and documents to ids
+    def conditions_to_fields(conditions)
+      conditions.inject({}) do |fields, (key, value)|
+        if value.is_a?(Dynamoid::Document) && klass.attributes.keys.include?("#{key}_ids".to_sym)
+          fields.merge("#{key}_ids".to_sym => Set[value.id])
+        else
+          fields.merge(key => value)
         end
       end
-
-      def order_by(orders, &block)
-
-      end
     end
+   end
   end
 end
